@@ -8,6 +8,7 @@ export default function Capture() {
   const [preview, setPreview] = useState<string | null>(null);
   const [vehicleNumber, setVehicleNumber] = useState<string>("");
   const [uploading, setUploading] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -36,7 +37,7 @@ export default function Capture() {
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [stream]);
+  }, []);
 
   // Capture a photo from the live video feed
   const capturePhoto = () => {
@@ -50,6 +51,8 @@ export default function Capture() {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL("image/png");
       setPreview(dataUrl);
+      // Show overlay for preview and vehicle input
+      setShowOverlay(true);
     }
   };
 
@@ -78,6 +81,7 @@ export default function Capture() {
       alert("Upload successful!");
       setPreview(null);
       setVehicleNumber("");
+      setShowOverlay(false);
     } catch (error) {
       console.error("Upload error:", error);
       alert("Upload failed. Please try again.");
@@ -87,46 +91,59 @@ export default function Capture() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-md p-6">
-        <h1 className="text-2xl font-bold text-center mb-2">Emergency Capture</h1>
-        <p className="text-gray-600 text-center mb-6">
-          Capture emergency situation and send for approval.
-        </p>
-        <div className="mb-4">
-          {/* Video feed from the camera */}
-          <video ref={videoRef} autoPlay className="w-full rounded-md" />
+    <div className="relative min-h-screen bg-black">
+      {/* Full-screen video feed */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      {/* Capture button overlayed on the video */}
+      {!showOverlay && (
+        <div className="absolute inset-0 flex items-end justify-center pb-10">
           <button
             onClick={capturePhoto}
-            className="mt-2 w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
+            className="bg-green-600 text-white py-3 px-6 rounded-full text-lg shadow-lg hover:bg-green-700 transition"
           >
             Capture Photo
           </button>
         </div>
-        {preview && (
-          <div className="mb-4">
-            <img src={preview} alt="Preview" className="w-full rounded-md" />
-          </div>
-        )}
-        <div className="mb-4">
+      )}
+
+      {/* Overlay for preview and vehicle number input */}
+      {showOverlay && preview && (
+        <div className="absolute inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center p-4">
+          <img src={preview} alt="Captured" className="w-full max-h-3/4 object-contain rounded-md mb-4" />
           <input
             type="text"
             placeholder="Enter Vehicle Number"
             value={vehicleNumber}
             onChange={(e) => setVehicleNumber(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full max-w-sm p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
           />
+          <div className="flex space-x-4">
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              {uploading ? "Uploading..." : "Send"}
+            </button>
+            <button
+              onClick={() => {
+                setShowOverlay(false);
+                setPreview(null);
+              }}
+              className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleUpload}
-          disabled={uploading || !preview}
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
-        >
-          {uploading ? "Uploading..." : "Send"}
-        </button>
-        {/* Hidden canvas for capturing the photo */}
-        <canvas ref={canvasRef} style={{ display: "none" }} />
-      </div>
+      )}
+      {/* Hidden canvas for capturing the photo */}
+      <canvas ref={canvasRef} style={{ display: "none" }} />
     </div>
   );
 }
