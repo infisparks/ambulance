@@ -1,10 +1,9 @@
 // firebase.ts
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 import { getDatabase } from "firebase/database";
 import { getStorage } from "firebase/storage";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
-// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCiDY2tXfTphkwM86FkVMYf-B3m_2ih0jo",
   authDomain: "ambulance-89a48.firebaseapp.com",
@@ -16,10 +15,18 @@ const firebaseConfig = {
   measurementId: "G-BS76WR1G13"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+if (typeof window !== "undefined") {
+  // Only run analytics on the client-side
+  isSupported().then((supported) => {
+    if (supported) {
+      getAnalytics(app);
+    }
+  });
+}
+
 const database = getDatabase(app);
 const storage = getStorage(app);
 
-export { app, analytics, database, storage };
+export { app, database, storage };
