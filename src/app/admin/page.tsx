@@ -2,12 +2,19 @@
 import { useEffect, useState } from "react";
 import { ref as dbRef, onValue, update } from "firebase/database";
 import { database } from "../../../firebase";
+import Image from "next/image";
 
 interface DataItem {
   id: string;
   vehicleNumber: string;
   timestamp: string;
   imageUrl: string;
+}
+
+interface FirebaseRecord {
+  vehicleNumber?: string;
+  timestamp: string;
+  imageUrl?: string;
 }
 
 export default function AdminPanel() {
@@ -22,11 +29,12 @@ export default function AdminPanel() {
       const items: DataItem[] = [];
       if (data) {
         Object.entries(data).forEach(([key, value]) => {
+          const record = value as FirebaseRecord;
           items.push({
             id: key,
-            vehicleNumber: (value as any).vehicleNumber || "No Vehicle Number",
-            timestamp: (value as any).timestamp,
-            imageUrl: (value as any).imageUrl || "",
+            vehicleNumber: record.vehicleNumber || "No Vehicle Number",
+            timestamp: record.timestamp,
+            imageUrl: record.imageUrl || "",
           });
         });
       }
@@ -85,12 +93,18 @@ export default function AdminPanel() {
                   <tr key={item.id}>
                     <td className="px-4 py-4 whitespace-nowrap">
                       {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt="Submission"
-                          className="w-16 h-16 object-cover rounded-md cursor-pointer transition-transform hover:scale-105"
+                        <div
+                          className="relative w-16 h-16 cursor-pointer transition-transform hover:scale-105"
                           onClick={() => setModalImage(item.imageUrl)}
-                        />
+                        >
+                          <Image
+                            src={item.imageUrl}
+                            alt="Submission"
+                            layout="fill"
+                            objectFit="cover"
+                            className="rounded-md"
+                          />
+                        </div>
                       ) : (
                         <span className="text-gray-400">No Image</span>
                       )}
@@ -141,12 +155,18 @@ export default function AdminPanel() {
               >
                 <div className="flex justify-center">
                   {item.imageUrl ? (
-                    <img
-                      src={item.imageUrl}
-                      alt="Submission"
-                      className="w-full h-48 object-cover rounded-md cursor-pointer transition-transform hover:scale-105"
+                    <div
+                      className="relative w-full h-48 cursor-pointer transition-transform hover:scale-105"
                       onClick={() => setModalImage(item.imageUrl)}
-                    />
+                    >
+                      <Image
+                        src={item.imageUrl}
+                        alt="Submission"
+                        layout="fill"
+                        objectFit="cover"
+                        className="rounded-md"
+                      />
+                    </div>
                   ) : (
                     <span className="text-gray-400">No Image</span>
                   )}
@@ -174,7 +194,9 @@ export default function AdminPanel() {
               </div>
             ))
           ) : (
-            <div className="text-center text-gray-500">No submissions available.</div>
+            <div className="text-center text-gray-500">
+              No submissions available.
+            </div>
           )}
         </div>
       </div>
@@ -183,11 +205,16 @@ export default function AdminPanel() {
       {modalImage && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-75 p-4">
           <div className="relative max-w-3xl max-h-full">
-            <img
-              src={modalImage}
-              alt="Full view"
-              className="w-full h-auto rounded-lg"
-            />
+            <div className="relative w-full h-auto">
+              <Image
+                src={modalImage}
+                alt="Full view"
+                layout="responsive"
+                width={700}
+                height={500}
+                className="rounded-lg"
+              />
+            </div>
             <button
               onClick={() => setModalImage(null)}
               className="absolute top-2 right-2 bg-gray-800 text-white rounded-full p-2 hover:bg-gray-700"
