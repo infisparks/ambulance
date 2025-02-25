@@ -1,18 +1,18 @@
-// pages/admin.tsx
-"use client"
+"use client";
 import { useEffect, useState } from "react";
 import { ref as dbRef, onValue, update } from "firebase/database";
 import { database } from "../../../firebase";
 
 interface DataItem {
   id: string;
-  email?: string;
+  vehicleNumber: string;
   timestamp: string;
-  imageUrl?: string;
+  imageUrl: string;
 }
 
 export default function AdminPanel() {
   const [dataItems, setDataItems] = useState<DataItem[]>([]);
+  const [modalImage, setModalImage] = useState<string | null>(null);
 
   // Listen to realtime updates from the "data" node in your DB
   useEffect(() => {
@@ -24,13 +24,13 @@ export default function AdminPanel() {
         Object.entries(data).forEach(([key, value]) => {
           items.push({
             id: key,
-            email: (value as any).email || "No Email",
+            vehicleNumber: (value as any).vehicleNumber || "No Vehicle Number",
             timestamp: (value as any).timestamp,
             imageUrl: (value as any).imageUrl || "",
           });
         });
       }
-      // Optionally sort the records by timestamp descending
+      // Sort records by timestamp descending
       items.sort(
         (a, b) =>
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -39,7 +39,6 @@ export default function AdminPanel() {
     });
 
     return () => {
-      // Clean up the listener on unmount
       unsubscribe();
     };
   }, []);
@@ -58,19 +57,24 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-3xl mx-auto bg-white shadow-md rounded-md p-6">
+      <div className="max-w-5xl mx-auto bg-white shadow-md rounded-md p-6">
         <h1 className="text-2xl font-bold text-center mb-6">Admin Panel</h1>
-        <div className="overflow-x-auto">
+
+        {/* Table view for larger screens */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead>
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Image
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Vehicle Number
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Timestamp
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -79,16 +83,28 @@ export default function AdminPanel() {
               {dataItems.length > 0 ? (
                 dataItems.map((item) => (
                   <tr key={item.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {item.email}
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt="Submission"
+                          className="w-16 h-16 object-cover rounded-md cursor-pointer transition-transform hover:scale-105"
+                          onClick={() => setModalImage(item.imageUrl)}
+                        />
+                      ) : (
+                        <span className="text-gray-400">No Image</span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      {item.vehicleNumber}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
                       {new Date(item.timestamp).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="px-4 py-4 whitespace-nowrap text-center space-x-2">
                       <button
                         onClick={() => handleLED(true)}
-                        className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded mr-2"
+                        className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded"
                       >
                         Approve
                       </button>
@@ -104,8 +120,8 @@ export default function AdminPanel() {
               ) : (
                 <tr>
                   <td
-                    colSpan={3}
-                    className="px-6 py-4 text-center text-gray-500"
+                    colSpan={4}
+                    className="px-4 py-4 text-center text-gray-500"
                   >
                     No submissions available.
                   </td>
@@ -114,7 +130,73 @@ export default function AdminPanel() {
             </tbody>
           </table>
         </div>
+
+        {/* Card view for mobile devices */}
+        <div className="grid grid-cols-1 gap-4 md:hidden">
+          {dataItems.length > 0 ? (
+            dataItems.map((item) => (
+              <div
+                key={item.id}
+                className="bg-gray-50 rounded-lg shadow p-4 flex flex-col space-y-3"
+              >
+                <div className="flex justify-center">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt="Submission"
+                      className="w-full h-48 object-cover rounded-md cursor-pointer transition-transform hover:scale-105"
+                      onClick={() => setModalImage(item.imageUrl)}
+                    />
+                  ) : (
+                    <span className="text-gray-400">No Image</span>
+                  )}
+                </div>
+                <div className="text-sm font-medium text-gray-700">
+                  <span className="block">Vehicle: {item.vehicleNumber}</span>
+                  <span className="block">
+                    {new Date(item.timestamp).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-around">
+                  <button
+                    onClick={() => handleLED(true)}
+                    className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleLED(false)}
+                    className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded"
+                  >
+                    Disapprove
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center text-gray-500">No submissions available.</div>
+          )}
+        </div>
       </div>
+
+      {/* Modal for full screen image display */}
+      {modalImage && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-75 p-4">
+          <div className="relative max-w-3xl max-h-full">
+            <img
+              src={modalImage}
+              alt="Full view"
+              className="w-full h-auto rounded-lg"
+            />
+            <button
+              onClick={() => setModalImage(null)}
+              className="absolute top-2 right-2 bg-gray-800 text-white rounded-full p-2 hover:bg-gray-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
